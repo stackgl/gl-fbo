@@ -1,0 +1,35 @@
+{
+  "name": "fbo",
+  "version": "0.0.0",
+  "description": "Frame buffer object wrapper for WebGL",
+  "main": "fbo.js",
+  "dependencies": {
+    "webglew": "~0.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "tap"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mikolalysenko/fbo.git"
+  },
+  "keywords": [
+    "fbo",
+    "frame",
+    "buffer",
+    "framebuffer",
+    "object",
+    "webgl",
+    "gl",
+    "offscreen",
+    "render",
+    "texture",
+    "renderbuffer",
+    "render"
+  ],
+  "author": "Mikola Lysenko",
+  "license": "BSD",
+  "readmeFilename": "README.md",
+  "gitHead": "6173b4ee305e99f359a1a5939bba28169699d9ef"
+}
