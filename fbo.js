@@ -120,9 +120,26 @@ function createFBO(gl, width, height, options) {
   return new FrameBuffer(gl, width, height, color_type, use_color, use_depth, use_stencil);
 }
 
-function bindDisplay(gl) {
-  gl.bind(gl.FRAMEBUFFER, null);
+//Wrapper for drawing buffer
+function DrawingBuffer(gl) {
+  this.context = gl;
+}
+DrawingBuffer.prototype.fbo = null;
+DrawingBuffer.prototype.depth = null;
+DrawingBuffer.prototype.color = null;
+Object.defineProperty(DrawingBuffer.prototype, "valid", {
+  "get": function() { return true; }
+});
+Object.defineProperty(DrawingBuffer.prototype, "width", {
+  "get": function() { return this.context.drawingBufferWidth; }
+});
+Object.defineProperty(DrawingBuffer.prototype, "height", {
+  "get": function() { return this.context.drawingBufferHeight; }
+});
+DrawingBuffer.prototype.dispose = function() {};
+DrawingBuffer.prototype.bind = function() {
+  this.context.bind(this.context.FRAMEBUFFER, null);
 }
 
 module.exports = createFBO;
-module.exports.bindDisplay = bindDisplay;
+module.exports.drawingBuffer = function(gl) { return new DrawingBuffer(gl); }
