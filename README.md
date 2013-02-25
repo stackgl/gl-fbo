@@ -13,7 +13,7 @@ In [WebGL](http://www.khronos.org/registry/webgl/specs/latest), creating [Frameb
 9. [Initialize the render buffer](http://www.khronos.org/opengles/sdk/docs/man/xhtml/glRenderbufferStorage.xml)
 10. [Attach render buffer to frame buffer](http://www.khronos.org/opengles/sdk/docs/man/xhtml/glFramebufferRenderbuffer.xml)
 
-And it only gets more complicated once you try to add stencil buffers or depth textures.  Even worse, each step of this above process involves one or more extremely verbose calls to WebGL API functions, each of which expects the inputs in some specified order.
+And it only gets more complicated once you try to add stencil buffers or depth textures.  Even worse, each step of this above process involves one or more extremely verbose calls to WebGL API functions, each of which expects the inputs in some arbitrary order.
 
 Clearly, the solution to all of this is to make a wrapper which is exactly what this module does.
 
