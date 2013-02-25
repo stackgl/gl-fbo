@@ -74,6 +74,7 @@ FrameBuffer.prototype.bind = function() {
   }
   var gl = this.context;
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+  gl.viewport(0, 0, this.width, this.height);
 }
 
 FrameBuffer.prototype.dispose = function() {
@@ -139,6 +140,7 @@ Object.defineProperty(DrawingBuffer.prototype, "height", {
 DrawingBuffer.prototype.dispose = function() {};
 DrawingBuffer.prototype.bind = function() {
   this.context.bind(this.context.FRAMEBUFFER, null);
+  this.context.viewport(0, 0, this.width, this.height);
 }
 
 module.exports = createFBO;
