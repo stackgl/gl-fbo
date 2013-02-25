@@ -25,24 +25,25 @@ Install using npm:
     
 And here is how to use it:
 
-    //Assume gl is a WebGLContext
+```javascript
+//Assume gl is a WebGLContext
 
-    //First, require the library
-    var fbo = require("fbo");
-    
-    //Let's create a 512x512 framebuffer object, and bind it for rendering
-    var buffer = fbo(gl, 512, 512);
-    buffer.bind();
+//First, require the library
+var fbo = require("fbo");
 
-    // ... now we draw some stuff to frame buffer offscreen ...
-    
-    //When we are done, rebind the main drawing buffer
-    var drawing = fbo.drawingBuffer(gl);
-    drawing.bind();
+//Let's create a 512x512 framebuffer object, and bind it for rendering
+var buffer = fbo(gl, 512, 512);
+buffer.bind();
 
-    // ... and we can use the contents of the fbo as textures:
-    gl.bindTeture(gl.TEXTURE_2D, fbo.color);
+// ... now we draw some stuff to frame buffer offscreen ...
 
+//When we are done, rebind the main drawing buffer
+var drawing = fbo.drawingBuffer(gl);
+drawing.bind();
+
+// ... and we can use the contents of the fbo as textures:
+gl.bindTeture(gl.TEXTURE_2D, fbo.color);
+```
 
 ## Basic Usage
 
@@ -94,8 +95,10 @@ If true, the the buffer is not destroyed and can be bound.
 ### `buffer.bind()`
 Binds the framebuffer for drawing and sets an appropriate viewport.  Equivalent to:
 
-    this.context.bindFramebuffer(this.context.FRAMEBUFFER, this.fbo);
-    this.context.viewport(0, 0, this.width, this.height);
+```javascript
+this.context.bindFramebuffer(this.context.FRAMEBUFFER, this.fbo);
+this.context.viewport(0, 0, this.width, this.height);
+```
 
 ### `buffer.dispose()`
 Destroys the framebuffer and all textures/renderbuffers attached to it.
