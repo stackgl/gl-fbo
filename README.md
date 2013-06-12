@@ -17,13 +17,7 @@ And it only gets more complicated once you try to add stencil buffers or depth t
 
 Clearly, the solution to all of this is to make a wrapper which is exactly what this module does.
 
-Usage
-=====
-Install using npm:
-
-    npm install fbo
-    
-And here is how to use it:
+## Example
 
 ```javascript
 //Assume gl is a WebGLContext
@@ -45,7 +39,14 @@ drawing.bind();
 gl.bindTeture(gl.TEXTURE_2D, fbo.color);
 ```
 
-## Basic Usage
+
+## Install
+
+Install using npm:
+
+    npm install fbo
+
+## API
 
 ### `var fbo = require("fbo")`
 
