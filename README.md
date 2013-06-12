@@ -1,4 +1,4 @@
-fbo
+gl-fbo
 ===
 In [WebGL](http://www.khronos.org/registry/webgl/specs/latest), creating [Framebuffer objects](http://www.khronos.org/registry/webgl/specs/latest/#5.14.6) requires a lot of boilerplate.  At minimum, you need to do the following:
 
@@ -20,23 +20,89 @@ Clearly, the solution to all of this is to make a wrapper which is exactly what 
 ## Example
 
 ```javascript
-//Assume gl is a WebGLContext
+var shell = require("gl-now")()
+var createShader = require("gl-shader")
+var FBO = require("gl-fbo")
 
-//First, require the library
-var fbo = require("fbo");
+var prevState, curState, updateShader, drawShader
 
-//Let's create a 512x512 framebuffer object, and bind it for rendering
-var buffer = fbo(gl, 512, 512);
-buffer.bind();
+shell.on("gl-init", function() {
+  var gl = shell.gl
 
-// ... now we draw some stuff to frame buffer offscreen ...
+  //Allocate buffers
+  prevState = FBO(gl, 512, 512)
+  curState = FBO(gl, 512, 512)
 
-//When we are done, rebind the main drawing buffer
-var drawing = fbo.drawingBuffer(gl);
-drawing.bind();
+  //Create shaders
+  var vert_src = "\
+    attribute vec2 position;\
+    varying vec2 uv;\
+    void main() {\
+      gl_Position = position;\
+      uv = position;\
+    }"
+  
+  drawShader = createShader(gl, "\
+    uniform sampler2D buffer;\
+    varying vec2 uv;\
+    void main() {\
+      gl_FragColor = texture2D(buffer, uv);\
+    }\
+  ", vert_src)
 
-// ... and we can use the contents of the fbo as textures:
-gl.bindTeture(gl.TEXTURE_2D, fbo.color);
+  updateShader = createShader(gl, "\
+    uniform sampler2D buffer;\
+    uniform vec2 dims;\
+    varying vec2 uv;\
+    void main() {\
+      gl_FragColor = dims + texture2D(buffer, uv);\
+    }\
+  ", vert_src)
+  
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1,
+     0,  2,
+     2,  0
+  ]), gl.STATIC_DRAW)
+})
+
+shell.on("tick", function() {
+  var gl = shell.gl
+  
+  curBuffer.bind()
+  
+  updateShader.bind()
+  updateShader.attributes.position.pointer()
+  updateShader.attributes.position.enable()
+  
+  gl.activeTexture(gl.TEXTURE0)
+  gl.bindTexture(gl.TEXTURE_2D, prevState.color)
+  updateShader.uniforms.buffer = 0
+  
+  updateShader.uniforms.dims = [512, 512]
+  
+  gl.drawArrays(gl.TRIANGLES, 0, 3)
+
+  //Swap buffers
+  var tmp = curState
+  curState = prevState
+  prevState = tmp
+})
+
+shell.on("gl-render", function(t) {
+  var gl = shell.gl
+  
+  drawShader.bind()
+  drawShader.attributes.position.pointer()
+  drawShader.attributes.position.enable()
+  
+  gl.activeTexture(gl.TEXTURE0)
+  gl.bindTexture(gl.TEXTURE_2D, curState.color)
+  drawShader.uniforms.buffer = 0
+  
+  gl.drawArrays(gl.TRIANGLES, 0, 3)
+})
 ```
 
 
@@ -46,7 +112,7 @@ Install using npm:
 
     npm install fbo
 
-## API
+# API
 
 ### `var fbo = require("fbo")`
 
@@ -69,8 +135,12 @@ Returns a wrapped framebuffer object (for more details, see the "Wrapper Interfa
 ### `var drawing = fbo.drawingBuffer(gl)`
 You can also get a wrapper for the canvas' [DrawingBuffer](http://www.khronos.org/registry/webgl/specs/latest/#2.2).  It implements all the methods of the framebuffer wrapper, so you can use it interchangeably.
 
-## Wrapper Interface
+## FBO Properties
 The wrapped frame buffer object implements has the following properties
+
+```javascript
+var buffer = fbo(gl, 512, 512)
+```
 
 ### `buffer.context`
 The WebGLRenderingContext for the buffer
