@@ -130,7 +130,7 @@ shell.on("gl-render", function(t) {
 
 Result:
 
-<img src="screenshot.png">
+<img src="https://raw.github.com/mikolalysenko/gl-fbo/master/screenshot.png">
 
 
 ## Install
