@@ -20,89 +20,6 @@ Clearly, the solution to all of this is to make a wrapper which is exactly what 
 ## Example
 
 ```javascript
-var shell = require("gl-now")()
-var createShader = require("gl-shader")
-var FBO = require("gl-fbo")
-
-var prevState, curState, updateShader, drawShader
-
-shell.on("gl-init", function() {
-  var gl = shell.gl
-
-  //Allocate buffers
-  prevState = FBO(gl, 512, 512)
-  curState = FBO(gl, 512, 512)
-
-  //Create shaders
-  var vert_src = "\
-    attribute vec2 position;\
-    varying vec2 uv;\
-    void main() {\
-      gl_Position = position;\
-      uv = position;\
-    }"
-  
-  drawShader = createShader(gl, "\
-    uniform sampler2D buffer;\
-    varying vec2 uv;\
-    void main() {\
-      gl_FragColor = texture2D(buffer, uv);\
-    }\
-  ", vert_src)
-
-  updateShader = createShader(gl, "\
-    uniform sampler2D buffer;\
-    uniform vec2 dims;\
-    varying vec2 uv;\
-    void main() {\
-      gl_FragColor = dims + texture2D(buffer, uv);\
-    }\
-  ", vert_src)
-  
-  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    -1, -1,
-     0,  2,
-     2,  0
-  ]), gl.STATIC_DRAW)
-})
-
-shell.on("tick", function() {
-  var gl = shell.gl
-  
-  curBuffer.bind()
-  
-  updateShader.bind()
-  updateShader.attributes.position.pointer()
-  updateShader.attributes.position.enable()
-  
-  gl.activeTexture(gl.TEXTURE0)
-  gl.bindTexture(gl.TEXTURE_2D, prevState.color)
-  updateShader.uniforms.buffer = 0
-  
-  updateShader.uniforms.dims = [512, 512]
-  
-  gl.drawArrays(gl.TRIANGLES, 0, 3)
-
-  //Swap buffers
-  var tmp = curState
-  curState = prevState
-  prevState = tmp
-})
-
-shell.on("gl-render", function(t) {
-  var gl = shell.gl
-  
-  drawShader.bind()
-  drawShader.attributes.position.pointer()
-  drawShader.attributes.position.enable()
-  
-  gl.activeTexture(gl.TEXTURE0)
-  gl.bindTexture(gl.TEXTURE_2D, curState.color)
-  drawShader.uniforms.buffer = 0
-  
-  gl.drawArrays(gl.TRIANGLES, 0, 3)
-})
 ```
 
 
@@ -110,69 +27,50 @@ shell.on("gl-render", function(t) {
 
 Install using npm:
 
-    npm install fbo
+    npm install gl-fbo
 
 # API
 
-### `var fbo = require("fbo")`
+### `var createFBO = require("gl-fbo")`
 
-To import the library, just use require.
+## Constructor
+There is currently only one default way to create a Framebuffer object.  You can construct a framebuffer using the following syntax:
 
-### `var buffer = fbo(gl, width, height[, options])`
-Calling the module creates a new [WebGLFramebuffer](http://www.khronos.org/registry/webgl/specs/latest/#5.5) with a color attachment and depth attachment.  You can modify this behavior a bit by setting some options.
+### `var fbo = createFBO(gl, width, height[, options])`
+Creates a wrapped framebuffer object
 
-* `gl` : a [WebGLRenderingContext](http://www.khronos.org/registry/webgl/specs/latest/#2.1)
-* `width` : the width of the framebuffer (in pixels)
-* `height` : the height of the framebuffer (in pixels)
-* `options` : You can also specify extra options to modify the framebuffer if you want:
-    + `color`: If set to false, disables the color attachment (Default: true)
-    + `depth`: If set to false, disables depth attachment (Default: true)
-    + `stencil`: If set enables stencil attachment (Default: false)
-    + `float`: If set to true, uses floating point numbers instead of ints for color buffer.  This requires the [OES_texture_float](http://www.khronos.org/registry/webgl/extensions/OES_texture_float/) or [OES_texture_half_float](http://www.khronos.org/registry/webgl/extensions/OES_texture_half_float/) extension to be supported. (Default: false)
+* `gl` is a handle to a WebGL context
+* `width` is the width of the framebuffer in pixels
+* `height` is the height of the framebuffer in pixels
+* `options` is an object containing the following optional properties:
 
-Returns a wrapped framebuffer object (for more details, see the "Wrapper Interface" section)
+    + `options.float` Use floating point textures (default `false`)
+    + `options.use_color`  If a color buffer gets created (default `true`)
+    + `options.use_depth` If fbo has a depth buffer (default: `true`)
+    + `options.use_stencil` If fbo has a stencil buffer (default: `false`)
 
-### `var drawing = fbo.drawingBuffer(gl)`
-You can also get a wrapper for the canvas' [DrawingBuffer](http://www.khronos.org/registry/webgl/specs/latest/#2.2).  It implements all the methods of the framebuffer wrapper, so you can use it interchangeably.
+## Methods
 
-## FBO Properties
-The wrapped frame buffer object implements has the following properties
+### `fbo.bind()`
+Binds the framebuffer object to the display.
 
-```javascript
-var buffer = fbo(gl, 512, 512)
-```
+### `fbo.dispose()`
+Destroys the framebuffer object and releases all associated resources
 
-### `buffer.context`
-The WebGLRenderingContext for the buffer
+## Properties
 
-### `buffer.fbo`
-The underlying WebGLFramebuffer object
+### `fbo.gl`
+A reference to the WebGL context
 
-### `buffer.width`
-The width of the buffer in pixels
+### `fbo.handle`
+A handle to the underlying Framebuffer object.
 
-### `buffer.height`
-The height of the buffer in pixels
+### `fbo.color`
+The color texture component.  Stored as a [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d) object.  If not present, is null.
 
-### `buffer.color`
-A WebGLTexture object for the color attachment.  If options.color === false, then this is set to null.
+### `fbo.depth`
+The depth/stencil component of the FBO.  Stored as a [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d).  If not present, is null.
 
-### `buffer.depth`
-A WebGLTexture object representing the depth and/or stencil attachment.  Only present if depth and/or stencil is set and if the WebGL context implements [WEBGL_depth_texture](http://www.khronos.org/registry/webgl/extensions/WEBGL_depth_texture/).
-
-### `buffer.valid`
-If true, the the buffer is not destroyed and can be bound.
-
-### `buffer.bind()`
-Binds the framebuffer for drawing and sets an appropriate viewport.  Equivalent to:
-
-```javascript
-this.context.bindFramebuffer(this.context.FRAMEBUFFER, this.fbo);
-this.context.viewport(0, 0, this.width, this.height);
-```
-
-### `buffer.dispose()`
-Destroys the framebuffer and all textures/renderbuffers attached to it.
 
 Credits
 =======

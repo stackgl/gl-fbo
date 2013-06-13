@@ -1,20 +1,14 @@
 "use strict";
 
 var webglew = require("webglew")
-  , ndarray = require("ndarray")
+  , createTexture = require("gl-texture2d")
 
-function initTexture(gl, width, height, type, component, attachment) {
+function initTexture(gl, width, height, type, format, attachment) {
   if(!type) {
     return null
   }
-  var result = gl.createTexture()
-  gl.bindTexture(gl.TEXTURE_2D, result)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-  gl.texImage2D(gl.TEXTURE_2D, 0, component, width, height, 0, component, type, null)
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, attachment, gl.TEXTURE_2D, result, 0)
+  var result = createTexture(gl, width, height, format, type)
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, attachment, gl.TEXTURE_2D, result.handle, 0)
   return result
 }
 
@@ -26,13 +20,15 @@ function initRenderBuffer(gl, width, height, component, attachment) {
   return result
 }
 
-function FrameBuffer(gl, width, height, color_type, use_color, use_depth, use_stencil) {
+function Framebuffer(gl, width, height, color_type, use_color, use_depth, use_stencil) {
   var extensions = webglew(gl)
 
-  this.context = gl
+  this.gl = gl
+  this.width = width|0
+  this.height = height|0
   this._destroyed = false
-  this.fbo = gl.createFramebuffer()
-  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+  this.handle = gl.createFramebuffer()
+  gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle)
   
   //Allocate color buffers
   this.color = this.use_color ? null : initTexture(gl, width, height, color_type, gl.RGBA, gl.COLOR_ATTACHMENT0)
@@ -49,7 +45,7 @@ function FrameBuffer(gl, width, height, color_type, use_color, use_depth, use_st
     } else if(use_depth) {
       this.depth = initTexture(gl, width, height,
                           gl.UNSIGNED_SHORT,
-                          gl.DEPTH_COMPONENT16,
+                          gl.DEPTH_COMPONENT,
                           gl.DEPTH_ATTACHMENT)
     }
   } else {
@@ -63,46 +59,49 @@ function FrameBuffer(gl, width, height, color_type, use_color, use_depth, use_st
   }
 }
 
-Object.defineProperty(FrameBuffer.prototype, "valid", {
+Object.defineProperty(Framebuffer.prototype, "valid", {
   get: function() {
     return !this._destroyed
   }
 });
 
-FrameBuffer.prototype.bind = function() {
+Object.defineProperty(Framebuffer.prototype, "shape", {
+  get: function() {
+    return [this.height, this.width]
+  }
+})
+
+Framebuffer.prototype.bind = function() {
   if(!this.valid) {
     return
   }
-  var gl = this.context
-  gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo)
+  var gl = this.gl
+  gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle)
   gl.viewport(0, 0, this.width, this.height)
 }
 
-FrameBuffer.prototype.dispose = function() {
+Framebuffer.prototype.dispose = function() {
   if(!this.valid) {
     return
   }
   this._destroyed = true
-  var gl = this.context
-  gl.deleteFramebuffer(this.fbo)
+  var gl = this.gl
+  gl.deleteFramebuffer(this.handle)
   if(this.depth) {
-    gl.deleteTexture(this.depth)
+    this.depth.dispose()
   }
   if(this._depth_rb) {
     gl.deleteRenderbuffer(this._depth_rb)
   }
   if(this.color) {
-    gl.deleteTexture(this.color)
+    this.color.dispose()
   }
-}
-
-FrameBuffer.prototype.readPixels = function(result) {
-  //TODO: implement this
 }
 
 function createFBO(gl, width, height, options) {
   var extensions = webglew(gl)
     , color_type, use_color, use_depth, use_stencil
+  options = options || {}
   if(options.color === false) {
     use_color = false
   } else {
@@ -125,33 +124,6 @@ function createFBO(gl, width, height, options) {
   if(options.stencil) {
     use_stencil = true
   }
-  return new FrameBuffer(gl, width, height, color_type, use_color, use_depth, use_stencil)
+  return new Framebuffer(gl, width, height, color_type, use_color, use_depth, use_stencil)
 }
-
-//Wrapper for drawing buffer
-function DrawingBuffer(gl) {
-  this.context = gl
-}
-DrawingBuffer.prototype.fbo = null
-DrawingBuffer.prototype.depth = null
-DrawingBuffer.prototype.color = null
-Object.defineProperty(DrawingBuffer.prototype, "valid", {
-  "get": function() { return true }
-});
-Object.defineProperty(DrawingBuffer.prototype, "width", {
-  "get": function() { return this.context.drawingBufferWidth }
-});
-Object.defineProperty(DrawingBuffer.prototype, "height", {
-  "get": function() { return this.context.drawingBufferHeight }
-});
-DrawingBuffer.prototype.dispose = function() {}
-DrawingBuffer.prototype.bind = function() {
-  this.context.bind(this.context.FRAMEBUFFER, null)
-  this.context.viewport(0, 0, this.width, this.height)
-}
-DrawingBuffer.prototype.readPixels = function(result) {
-}
-
-
 module.exports = createFBO
-module.exports.drawingBuffer = function(gl) { return new DrawingBuffer(gl) }
