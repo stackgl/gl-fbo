@@ -79,12 +79,13 @@ shell.on("gl-init", function() {
 shell.on("tick", function() {
   var gl = shell.gl
   
+  //Switch to state fbo
   curState.bind()
   
+  //Run update shader
   updateShader.bind()
   updateShader.uniforms.buffer = prevState.color.bind()
   updateShader.uniforms.dims = [512, 512]
-  
   gl.drawArrays(gl.TRIANGLES, 0, 3)
 
   //Swap buffers
@@ -96,8 +97,8 @@ shell.on("tick", function() {
 shell.on("gl-render", function(t) {
   var gl = shell.gl
   
+  //Render contents of buffer to screen
   drawShader.bind()
   drawShader.uniforms.buffer = curState.color.bind()
-  
   gl.drawArrays(gl.TRIANGLES, 0, 3)
 })
