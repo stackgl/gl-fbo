@@ -1,17 +1,18 @@
 {
   "name": "gl-fbo",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Frame buffer object wrapper for WebGL",
   "main": "fbo.js",
   "dependencies": {
     "webglew": "~0.0.0",
-    "gl-texture2d": "0.0.2"
+    "gl-texture2d": "~0.1.1"
   },
   "devDependencies": {
-    "gl-now": "0.0.0",
-    "ndarray": "~0.2.4",
-    "ndarray-fill": "0.0.0",
-    "gl-shader": "0.0.1"
+    "gl-now": "~0.0.0",
+    "ndarray": "~1.0.0",
+    "ndarray-fill": "~0.1.0",
+    "gl-shader": "~0.0.1",
+    "zeros": "~0.0.0"
   },
   "scripts": {
     "test": "tap test/*.js"

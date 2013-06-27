@@ -17,7 +17,7 @@ shell.on("gl-init", function() {
   curState = createFBO(gl, 512, 512)
   
   //Initialize colors for prev_state
-  var initial_conditions = ndarray.zeros([512, 512, 4], "uint8")
+  var initial_conditions = ndarray(new Uint8Array(512*512*4), [512, 512, 4])
   fill(initial_conditions, function(x,y,c) {
     if(c === 3) {
       return 255
