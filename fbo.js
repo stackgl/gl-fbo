@@ -8,7 +8,11 @@ function initTexture(gl, width, height, type, format, attachment) {
     return null
   }
   var result = createTexture(gl, width, height, format, type)
+  result.magFilter = gl.NEAREST
+  result.minFilter = gl.NEAREST
+  result.mipSamples = 0
   gl.framebufferTexture2D(gl.FRAMEBUFFER, attachment, gl.TEXTURE_2D, result.handle, 0)
+  gl.bindTexture(gl.TEXTURE_2D, null)
   return result
 }
 
