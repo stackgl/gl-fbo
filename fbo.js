@@ -35,6 +35,7 @@ function Framebuffer(gl, width, height, color_type, use_color, use_depth, use_st
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle)
   
   //Allocate color buffers
+  console.log(color_type === gl.FLOAT)
   this.color = this.use_color ? null : initTexture(gl, width, height, color_type, gl.RGBA, gl.COLOR_ATTACHMENT0)
   
   //Allocate depth/stencil buffers
@@ -113,8 +114,6 @@ function createFBO(gl, width, height, options) {
     if(options.float) {
       if(extensions.OES_texture_float) {
         color_type = gl.FLOAT
-      } else if(extensions.OES_texture_half_float) {
-        color_type = extensions.OES_texture_half_float
       } else {
         color_type = gl.UNSIGNED_BYTE
       }
