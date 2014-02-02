@@ -24,7 +24,7 @@ shell.on("gl-init", function() {
     }
     return Math.random() > 0.9 ? 255 : 0
   })
-  prevState.color.setPixels(initial_conditions)
+  prevState.color[0].setPixels(initial_conditions)
 
   //Create shaders
   var vert_src = "\
@@ -84,7 +84,7 @@ shell.on("tick", function() {
   
   //Run update shader
   updateShader.bind()
-  updateShader.uniforms.buffer = prevState.color.bind()
+  updateShader.uniforms.buffer = prevState.color[0].bind()
   updateShader.uniforms.dims = [512, 512]
   gl.drawArrays(gl.TRIANGLES, 0, 3)
 
@@ -99,6 +99,6 @@ shell.on("gl-render", function(t) {
   
   //Render contents of buffer to screen
   drawShader.bind()
-  drawShader.uniforms.buffer = curState.color.bind()
+  drawShader.uniforms.buffer = curState.color[0].bind()
   gl.drawArrays(gl.TRIANGLES, 0, 3)
 })

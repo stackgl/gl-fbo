@@ -155,9 +155,9 @@ Creates a wrapped framebuffer object
 * `options` is an object containing the following optional properties:
 
     + `options.float` Use floating point textures (default `false`)
-    + `options.use_color`  If a color buffer gets created (default `true`)
-    + `options.use_depth` If fbo has a depth buffer (default: `true`)
-    + `options.use_stencil` If fbo has a stencil buffer (default: `false`)
+    + `options.color`  The number of color buffers to create (default `1`)
+    + `options.depth` If fbo has a depth buffer (default: `true`)
+    + `options.stencil` If fbo has a stencil buffer (default: `false`)
 
 ## Methods
 
@@ -176,7 +176,7 @@ A reference to the WebGL context
 A handle to the underlying Framebuffer object.
 
 ### `fbo.color`
-The color texture component.  Stored as a [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d) object.  If not present, is null.
+An containing [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d) objects representing the buffers 
 
 ### `fbo.depth`
 The depth/stencil component of the FBO.  Stored as a [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d).  If not present, is null.

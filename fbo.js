@@ -3,6 +3,23 @@
 var webglew = require("webglew")
   , createTexture = require("gl-texture2d")
 
+var colorAttachmentArrays = null
+
+function lazyInitColorAttachments(gl, ext) {
+  var maxColorAttachments = gl.getParameter(ext.MAX_COLOR_ATTACHMENTS_WEBGL);
+  colorAttachmentArrays = new Array(maxColorAttachments + 1)
+  for(var i=0; i<=maxColorAttachments; ++i) {
+    var x = new Array(maxColorAttachments)
+    for(var j=0; j<i; ++j) {
+      x[j] = gl.COLOR_ATTACHMENT0 + j
+    }
+    for(var j=i; j<maxColorAttachments; ++j) {
+      x[j] = gl.NONE
+    }
+    colorAttachmentArrays[i] = x
+  }
+}
+
 function initTexture(gl, width, height, type, format, attachment) {
   if(!type) {
     return null
@@ -24,44 +41,60 @@ function initRenderBuffer(gl, width, height, component, attachment) {
   return result
 }
 
-function Framebuffer(gl, width, height, color_type, use_color, use_depth, use_stencil) {
+function Framebuffer(gl, width, height, colorType, numColor, useDepth, useStencil, ext) {
   var extensions = webglew(gl)
 
+  //Create storage
   this.gl = gl
   this.width = width|0
   this.height = height|0
   this._destroyed = false
   this.handle = gl.createFramebuffer()
+  this._ext = ext
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle)
   
   //Allocate color buffers
-  console.log(color_type === gl.FLOAT)
-  this.color = this.use_color ? null : initTexture(gl, width, height, color_type, gl.RGBA, gl.COLOR_ATTACHMENT0)
-  
+  this.color = new Array(numColor)
+  this._color_rb = null
+  for(var i=0; i<numColor; ++i) {
+    this.color[i] = initTexture(gl, width, height, colorType, gl.RGBA, gl.COLOR_ATTACHMENT0 + i)
+  }
+  if(numColor === 0) {
+    this._color_rb = initRenderBuffer(gl, width, height, gl.RGBA4, gl.COLOR_ATTACHMENT0)
+  }
+
   //Allocate depth/stencil buffers
   this.depth = null
   this._depth_rb = null
   if(extensions.WEBGL_depth_texture) {
-    if(use_stencil) {
+    if(useStencil) {
       this.depth = initTexture(gl, width, height,
                           extensions.WEBGL_depth_texture.UNSIGNED_INT_24_8_WEBGL,
                           gl.DEPTH_STENCIL,
                           gl.DEPTH_STENCIL_ATTACHMENT)
-    } else if(use_depth) {
+    } else if(useDepth) {
       this.depth = initTexture(gl, width, height,
                           gl.UNSIGNED_SHORT,
                           gl.DEPTH_COMPONENT,
                           gl.DEPTH_ATTACHMENT)
     }
   } else {
-    if(use_depth && use_stencil) {
+    if(useDepth && useStencil) {
       this._depth_rb = initRenderBuffer(gl, width, height, gl.DEPTH_STENCIL, gl.DEPTH_STENCIL_ATTACHMENT)
-    } else if(use_depth) {
+    } else if(useDepth) {
       this._depth_rb = initRenderBuffer(gl, width, height, gl.DEPTH_COMPONENT16, gl.DEPTH_ATTACHMENT)
-    } else if(use_stencil) {
+    } else if(useStencil) {
       this._depth_rb = initRenderBuffer(gl, width, height, gl.STENCIL_INDEX, gl.STENCIL_ATTACHMENT)
     }
   }
+  if(numColor === 0) {
+    if(ext) {
+      ext.drawBuffersWEBGL(colorAttachmentArrays[0])
+    }
+  } else if(numColor > 1) {
+    ext.drawBuffersWEBGL(colorAttachmentArrays[numColor])
+  }
+  this.gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 }
 
 Object.defineProperty(Framebuffer.prototype, "valid", {
@@ -98,35 +131,58 @@ Framebuffer.prototype.dispose = function() {
   if(this._depth_rb) {
     gl.deleteRenderbuffer(this._depth_rb)
   }
-  if(this.color) {
-    this.color.dispose()
+  for(var i=0; i<this.color.length; ++i) {
+    this.color[i].dispose()
+  }
+  if(this._color_rb) {
+    gl.deleteRenderbuffer(this._color_rb)
   }
 }
 
 function createFBO(gl, width, height, options) {
   var extensions = webglew(gl)
-    , color_type, use_color, use_depth, use_stencil
+    , colorType
+    , numColors
+    , useDepth
+    , useStencil
+  //Lazily initialize color attachment arrays
+  if(!colorAttachmentArrays && extensions.WEBGL_draw_buffers) {
+    lazyInitColorAttachments(gl, extensions.WEBGL_draw_buffers)
+  }
   options = options || {}
-  if(options.color === false) {
-    use_color = false
-  } else {
-    color_type = gl.UNSIGNED_BYTE;
-    if(options.float) {
-      if(extensions.OES_texture_float) {
-        color_type = gl.FLOAT
+  numColors = 1
+  if("color" in options) {
+    numColors = Math.max(options.color|0, 0)
+    if(numColors > 1) {
+      //Check if multiple render targets supported
+      var mrtext = extensions.WEBGL_draw_buffers
+      if(!mrtext) {
+        numColors = 1
       } else {
-        color_type = gl.UNSIGNED_BYTE
+        numColors = Math.min(numColors, gl.getParameter(mrtext.MAX_COLOR_ATTACHMENTS_WEBGL))|0
       }
     }
   }
-  use_depth = true
-  if(options.depth === false) {
-    use_depth = false
+  colorType = gl.UNSIGNED_BYTE;
+  if(options.float && numColors > 0 && extensions.OES_texture_float) {
+    colorType = gl.FLOAT
   }
-  use_stencil = false
-  if(options.stencil) {
-    use_stencil = true
+  useDepth = true
+  if("depth" in options) {
+    useDepth = !!options.depth
   }
-  return new Framebuffer(gl, width, height, color_type, use_color, use_depth, use_stencil)
+  useStencil = false
+  if("stencil" in options) {
+    useStencil = !!options.stencil
+  }
+  return new Framebuffer(
+    gl, 
+    width, 
+    height, 
+    colorType, 
+    numColors, 
+    useDepth, 
+    useStencil, 
+    extensions.WEBGL_draw_buffers)
 }
 module.exports = createFBO
