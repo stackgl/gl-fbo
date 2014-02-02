@@ -41,14 +41,14 @@ shell.on("gl-init", function() {
   curState = createFBO(gl, 512, 512)
   
   //Initialize colors for prev_state
-  var initial_conditions = ndarray.zeros([512, 512, 4], "uint8")
+  var initial_conditions = ndarray(new Uint8Array(512*512*4), [512, 512, 4])
   fill(initial_conditions, function(x,y,c) {
     if(c === 3) {
       return 255
     }
     return Math.random() > 0.9 ? 255 : 0
   })
-  prevState.color.setPixels(initial_conditions)
+  prevState.color[0].setPixels(initial_conditions)
 
   //Create shaders
   var vert_src = "\
@@ -108,7 +108,7 @@ shell.on("tick", function() {
   
   //Run update shader
   updateShader.bind()
-  updateShader.uniforms.buffer = prevState.color.bind()
+  updateShader.uniforms.buffer = prevState.color[0].bind()
   updateShader.uniforms.dims = [512, 512]
   gl.drawArrays(gl.TRIANGLES, 0, 3)
 
@@ -123,7 +123,7 @@ shell.on("gl-render", function(t) {
   
   //Render contents of buffer to screen
   drawShader.bind()
-  drawShader.uniforms.buffer = curState.color.bind()
+  drawShader.uniforms.buffer = curState.color[0].bind()
   gl.drawArrays(gl.TRIANGLES, 0, 3)
 })
 ```

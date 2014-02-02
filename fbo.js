@@ -125,17 +125,22 @@ Framebuffer.prototype.dispose = function() {
   this._destroyed = true
   var gl = this.gl
   gl.deleteFramebuffer(this.handle)
+  this.handle = null
   if(this.depth) {
     this.depth.dispose()
+    this.depth = null
   }
   if(this._depth_rb) {
     gl.deleteRenderbuffer(this._depth_rb)
+    this._depth_rb = null
   }
   for(var i=0; i<this.color.length; ++i) {
     this.color[i].dispose()
+    this.color[i] = null
   }
   if(this._color_rb) {
     gl.deleteRenderbuffer(this._color_rb)
+    this._color_rb = null
   }
 }
 
