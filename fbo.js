@@ -94,6 +94,19 @@ function Framebuffer(gl, width, height, colorType, numColor, useDepth, useStenci
   } else if(numColor > 1) {
     ext.drawBuffersWEBGL(colorAttachmentArrays[numColor])
   }
+
+  //Check frame buffer state
+  var valid = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  switch(valid){
+      case gl.FRAMEBUFFER_UNSUPPORTED:
+          throw "gl-fbo: Framebuffer unsupported";
+      case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+          throw "gl-fbo: Framebuffer incomplete attachment";
+      case gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+          throw "gl-fbo: Framebuffer incomplete dimensions";
+      case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+          throw "gl-fbo: Framebuffer incomplete missing attachment";
+  }
   this.gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 }
 

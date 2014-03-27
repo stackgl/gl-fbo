@@ -176,7 +176,7 @@ A reference to the WebGL context
 A handle to the underlying Framebuffer object.
 
 ### `fbo.color`
-An containing [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d) objects representing the buffers 
+An containing [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d) objects representing the buffers.  
 
 ### `fbo.depth`
 The depth/stencil component of the FBO.  Stored as a [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d).  If not present, is null.
