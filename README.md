@@ -181,6 +181,11 @@ An containing [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d) ob
 ### `fbo.depth`
 The depth/stencil component of the FBO.  Stored as a [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d).  If not present, is null.
 
+### `fbo.width`
+The width of the FBO in pixels. Change this value to resize the FBO's textures.
+
+### `fbo.height`
+The height of the FBO in pixels. Change this value to resize the FBO's textures.
 
 Credits
 =======
