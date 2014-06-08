@@ -142,7 +142,9 @@ Framebuffer.prototype._resize = function(width, height) {
 Object.defineProperty(Framebuffer.prototype, 'width', {
   get: function() { return this._width },
   set: function(value) {
-    this._width = value|0
+    value = value|0
+    if (value === this._width) return
+    this._width = value
     this._dirty = true
   }
 })
@@ -150,7 +152,9 @@ Object.defineProperty(Framebuffer.prototype, 'width', {
 Object.defineProperty(Framebuffer.prototype, 'height', {
   get: function() { return this._height },
   set: function(value) {
-    this._height = value|0
+    value = value|0
+    if (value === this._height) return
+    this._height = value
     this._dirty = true
   }
 })
