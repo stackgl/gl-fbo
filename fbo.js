@@ -46,14 +46,41 @@ function Framebuffer(gl, width, height, colorType, numColor, useDepth, useStenci
 
   //Create storage
   this.gl = gl
-  this.width = width|0
-  this.height = height|0
+  this._width = width|0
+  this._height = height|0
   this._destroyed = false
   this.handle = gl.createFramebuffer()
   this._ext = ext
+  this._dirty = true
+  this._extensions = extensions
+  this._numColor = numColor
+  this._colorType = colorType
+  this._useDepth = useDepth
+  this._useStencil = useStencil
+
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle)
-  
-  //Allocate color buffers
+  this.allocateColorBuffers()
+  this.allocateOtherBuffers()
+
+  if(numColor === 0) {
+    if(ext) {
+      ext.drawBuffersWEBGL(colorAttachmentArrays[0])
+    }
+  } else if(numColor > 1) {
+    ext.drawBuffersWEBGL(colorAttachmentArrays[numColor])
+  }
+
+  this.checkState()
+  this.gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+}
+
+Framebuffer.prototype.allocateColorBuffers = function() {
+  var colorType = this._colorType
+  var numColor = this._numColor
+  var height = this.height
+  var width = this.width
+  var gl = this.gl
+
   this.color = new Array(numColor)
   this._color_rb = null
   for(var i=0; i<numColor; ++i) {
@@ -62,10 +89,20 @@ function Framebuffer(gl, width, height, colorType, numColor, useDepth, useStenci
   if(numColor === 0) {
     this._color_rb = initRenderBuffer(gl, width, height, gl.RGBA4, gl.COLOR_ATTACHMENT0)
   }
+}
+
+Framebuffer.prototype.allocateOtherBuffers = function() {
+  var useStencil = this._useStencil
+  var extensions = this._extensions
+  var useDepth = this._useDepth
+  var height = this.height
+  var width = this.width
+  var gl = this.gl
 
   //Allocate depth/stencil buffers
   this.depth = null
   this._depth_rb = null
+
   if(extensions.WEBGL_depth_texture) {
     if(useStencil) {
       this.depth = initTexture(gl, width, height,
@@ -87,15 +124,43 @@ function Framebuffer(gl, width, height, colorType, numColor, useDepth, useStenci
       this._depth_rb = initRenderBuffer(gl, width, height, gl.STENCIL_INDEX, gl.STENCIL_ATTACHMENT)
     }
   }
-  if(numColor === 0) {
-    if(ext) {
-      ext.drawBuffersWEBGL(colorAttachmentArrays[0])
-    }
-  } else if(numColor > 1) {
-    ext.drawBuffersWEBGL(colorAttachmentArrays[numColor])
-  }
+}
 
-  //Check frame buffer state
+Framebuffer.prototype._resize = function(width, height) {
+  var gl = this.gl
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle)
+  this.disposeBuffers()
+  this.allocateColorBuffers()
+  this.allocateOtherBuffers()
+  this._dirty = false
+
+  this.checkState()
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+}
+
+Object.defineProperty(Framebuffer.prototype, 'width', {
+  get: function() { return this._width },
+  set: function(value) {
+    value = value|0
+    if (value === this._width) return
+    this._width = value
+    this._dirty = true
+  }
+})
+
+Object.defineProperty(Framebuffer.prototype, 'height', {
+  get: function() { return this._height },
+  set: function(value) {
+    value = value|0
+    if (value === this._height) return
+    this._height = value
+    this._dirty = true
+  }
+})
+
+Framebuffer.prototype.checkState = function() {
+  var gl = this.gl
   var valid = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
   switch(valid){
       case gl.FRAMEBUFFER_UNSUPPORTED:
@@ -107,7 +172,6 @@ function Framebuffer(gl, width, height, colorType, numColor, useDepth, useStenci
       case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
           throw "gl-fbo: Framebuffer incomplete missing attachment";
   }
-  this.gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 }
 
 Object.defineProperty(Framebuffer.prototype, "valid", {
@@ -126,6 +190,9 @@ Framebuffer.prototype.bind = function() {
   if(!this.valid) {
     return
   }
+  if (this._dirty) {
+    this._resize(this.width, this.height)
+  }
   var gl = this.gl
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle)
   gl.viewport(0, 0, this.width, this.height)
@@ -139,6 +206,12 @@ Framebuffer.prototype.dispose = function() {
   var gl = this.gl
   gl.deleteFramebuffer(this.handle)
   this.handle = null
+  this.disposeBuffers()
+}
+
+Framebuffer.prototype.disposeBuffers = function() {
+  var gl = this.gl
+
   if(this.depth) {
     this.depth.dispose()
     this.depth = null
