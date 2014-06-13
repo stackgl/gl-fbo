@@ -158,10 +158,10 @@ Destroys the framebuffer object and releases all associated resources
 
 
 ### `fbo.shape`
-Returns the shape of the frame buffer object.  If you want to resize, assign to this property.  For example,
+Returns the shape of the frame buffer object.  Writing to this property resizes the framebuffer.  For example,
 
 ```javascript
-fbo.shape = [ nh, nw ]
+fbo.shape = [ numRows, numCols ]
 ```
 
 ### `fbo.gl`
