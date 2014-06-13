@@ -133,15 +133,15 @@ Install using npm:
 ## Constructor
 There is currently only one default way to create a Framebuffer object.  You can construct a framebuffer using the following syntax:
 
-### `var fbo = createFBO(gl, width, height[, options])`
+### `var fbo = createFBO(gl, shape[, options])`
 Creates a wrapped framebuffer object
 
 * `gl` is a handle to a WebGL context
-* `width` is the width of the framebuffer in pixels
-* `height` is the height of the framebuffer in pixels
+* `shape` is a length 2 array encoding the `[rows, columns]` of the frame buffer
 * `options` is an object containing the following optional properties:
 
     + `options.float` Use floating point textures (default `false`)
+    + `options.preferFloat` Upgrade to floating point if available, otherwise fallback to 8bit. (default `false`)
     + `options.color`  The number of color buffers to create (default `1`)
     + `options.depth` If fbo has a depth buffer (default: `true`)
     + `options.stencil` If fbo has a stencil buffer (default: `false`)
