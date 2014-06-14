@@ -194,6 +194,9 @@ Object.defineProperty(proto, "shape", {
       throw new Error("gl-fbo: Can't resize destroyed FBO")
     }
 
+    if (this._shape[0] === x[0]|0 &&
+        this._shape[1] === x[1]|0) return
+
     var gl = this.gl
     
     //Check parameter ranges
