@@ -1,6 +1,6 @@
 {
   "name": "gl-fbo",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Frame buffer object wrapper for WebGL",
   "main": "fbo.js",
   "dependencies": {
