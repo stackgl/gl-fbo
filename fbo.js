@@ -6,6 +6,10 @@ var createTexture = require("gl-texture2d")
 module.exports = createFBO
 
 var colorAttachmentArrays = null
+var FRAMEBUFFER_UNSUPPORTED
+var FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+var FRAMEBUFFER_INCOMPLETE_DIMENSIONS
+var FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
 
 function lazyInitColorAttachments(gl, ext) {
   var maxColorAttachments = gl.getParameter(ext.MAX_COLOR_ATTACHMENTS_WEBGL);
@@ -25,13 +29,13 @@ function lazyInitColorAttachments(gl, ext) {
 //Throw an appropriate error
 function throwFBOError(status) {
   switch(status){
-    case gl.FRAMEBUFFER_UNSUPPORTED:
+    case FRAMEBUFFER_UNSUPPORTED:
       throw new Error("gl-fbo: Framebuffer unsupported")
-    case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+    case FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
       throw new Error("gl-fbo: Framebuffer incomplete attachment")
-    case gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+    case FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
       throw new Error("gl-fbo: Framebuffer incomplete dimensions")
-    case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+    case FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
       throw new Error("gl-fbo: Framebuffer incomplete missing attachment")
     default:
       throw new Error("gl-fbo: Framebuffer failed for unspecified reason")
@@ -283,6 +287,15 @@ proto.dispose = function() {
 }
 
 function createFBO(gl, width, height, options) {
+
+  //Update frame buffer error code values
+  if(!FRAMEBUFFER_UNSUPPORTED) {
+    FRAMEBUFFER_UNSUPPORTED = gl.FRAMEBUFFER_UNSUPPORTED
+    FRAMEBUFFER_INCOMPLETE_ATTACHMENT = gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+    FRAMEBUFFER_INCOMPLETE_DIMENSIONS = gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS
+    FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT = gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
+  }
+
   var extensions = webglew(gl)
   
   //Lazily initialize color attachment arrays
@@ -295,6 +308,10 @@ function createFBO(gl, width, height, options) {
     options = height
     height = width[0]|0
     width = width[1]|0
+  }
+  
+  if(typeof width !== "number") {
+    throw new Error("gl-fbo: Missing shape parameter")
   }
 
   //Validate width/height properties
