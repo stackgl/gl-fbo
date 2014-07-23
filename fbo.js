@@ -11,6 +11,19 @@ var FRAMEBUFFER_INCOMPLETE_ATTACHMENT
 var FRAMEBUFFER_INCOMPLETE_DIMENSIONS
 var FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
 
+function saveFBOState(gl) {
+  var fbo = gl.getParameter(gl.FRAMEBUFFER_BINDING)
+  var rbo = gl.getParameter(gl.RENDERBUFFER_BINDING)
+  var tex = gl.getParameter(gl.TEXTURE_BINDING_2D)
+  return [fbo, rbo, tex]
+}
+
+function restoreFBOState(gl, data) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, data[0])
+  gl.bindRenderbuffer(gl.RENDERBUFFER, data[1])
+  gl.bindTexture(gl.TEXUTRE_2D, data[2])
+}
+
 function lazyInitColorAttachments(gl, ext) {
   var maxColorAttachments = gl.getParameter(ext.MAX_COLOR_ATTACHMENTS_WEBGL);
   colorAttachmentArrays = new Array(maxColorAttachments + 1)
@@ -51,8 +64,8 @@ function initTexture(gl, width, height, type, format, attachment) {
   result.magFilter = gl.NEAREST
   result.minFilter = gl.NEAREST
   result.mipSamples = 1
+  result.bind()
   gl.framebufferTexture2D(gl.FRAMEBUFFER, attachment, gl.TEXTURE_2D, result.handle, 0)
-  gl.bindTexture(gl.TEXTURE_2D, null)
   return result
 }
 
@@ -67,10 +80,14 @@ function initRenderBuffer(gl, width, height, component, attachment) {
 
 //Rebuild the frame buffer
 function rebuildFBO(fbo) {
+
+  //Save FBO state
+  var state = saveFBOState(fbo.gl)
+
   var gl = fbo.gl
   var handle = fbo.handle = gl.createFramebuffer()
-  var height = fbo._shape[0]
-  var width = fbo._shape[1]
+  var width = fbo._shape[0]
+  var height = fbo._shape[1]
   var numColors = fbo.color.length
   var ext = fbo._ext
   var useStencil = fbo._useStencil
@@ -145,12 +162,14 @@ function rebuildFBO(fbo) {
       fbo._color_rb = null
     }
 
+    restoreFBOState(gl, state)
+
     //Throw the frame buffer error
     throwFBOError(status)
   }
 
   //Everything ok, let's get on with life
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+  restoreFBOState(gl, state)
 }
 
 function Framebuffer(gl, width, height, colorType, numColors, useDepth, useStencil, ext) {
@@ -158,12 +177,15 @@ function Framebuffer(gl, width, height, colorType, numColors, useDepth, useStenc
 
   //Handle and set properties
   this.gl = gl
-  this._shape = [height|0, width|0]
+  this._shape = [width|0, height|0]
   this._destroyed = false
   this._ext = ext
 
   //Allocate buffers
   this.color = new Array(numColors)
+  for(var i=0; i<numColors; ++i) {
+    this.color[i] = null
+  }
   this._color_rb = null
   this.depth = null
   this._depth_rb = null
@@ -173,81 +195,149 @@ function Framebuffer(gl, width, height, colorType, numColors, useDepth, useStenc
   this._useDepth = useDepth
   this._useStencil = useStencil
   
+  //Shape vector for resizing
+  var parent = this
+  var shapeVector = [width|0, height|0]
+  Object.defineProperties(shapeVector, {
+    0: {
+      get: function() {
+        return parent._shape[0]
+      },
+      set: function(w) {
+        return parent.width = w
+      }
+    },
+    1: {
+      get: function() {
+        return parent._shape[1]
+      },
+      set: function(h) {
+        return parent.height = h
+      }
+    }
+  })
+  this._shapeVector = shapeVector
+
   //Initialize all attachments
   rebuildFBO(this)
 }
 
 var proto = Framebuffer.prototype
 
-Object.defineProperty(proto, "valid", {
-  get: function() {
-    return !this._destroyed
+function reshapeFBO(fbo, w, h) {
+  //If fbo is invalid, just skip this
+  if(fbo._destroyed) {
+    throw new Error("gl-fbo: Can't resize destroyed FBO")
   }
-});
 
-Object.defineProperty(proto, "shape", {
-  get: function() {
-    if(this._destroyed) {
-      return [0,0]
-    }
-    return this._shape
-  },
-  set: function(x) {
-    //If fbo is invalid, just skip this
-    if(this._destroyed) {
-      throw new Error("gl-fbo: Can't resize destroyed FBO")
-    }
+  //Don't resize if no change in shape
+  if( (fbo._shape[0] === w) &&
+      (fbo._shape[1] === h) ) {
+    return
+  }
 
-    if (this._shape[0] === x[0]|0 &&
-        this._shape[1] === x[1]|0) return
+  var gl = fbo.gl
+  
+  //Check parameter ranges
+  var maxFBOSize = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)
+  if( w < 0 || w > maxFBOSize || 
+      h < 0 || h > maxFBOSize) {
+    throw new Error("gl-fbo: Can't resize FBO, invalid dimensions")
+  }
 
-    var gl = this.gl
-    
-    //Check parameter ranges
-    var maxFBOSize = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)
-    if(!Array.isArray(x) || x.length !== 2 || 
-        x[0] < 0 || x[0] > maxFBOSize || 
-        x[1] < 0 || x[1] > maxFBOSize) {
-      throw new Error("gl-fbo: Can't resize FBO, invalid dimensions")
-    }
+  //Update shape
+  fbo._shape[0] = w
+  fbo._shape[1] = h
 
-    //Update shape
-    this._shape[0] = x[0]|0
-    this._shape[1] = x[1]|0
+  //Save framebuffer state
+  var state = saveFBOState(gl)
 
-    //Resize framebuffer attachments
-    for(var i=0; i<this.color.length; ++i) {
-      this.color[i].shape = this._shape
+  //Resize framebuffer attachments
+  for(var i=0; i<this.color.length; ++i) {
+    fbo.color[i].shape = fbo._shape
+  }
+  if(fbo._color_rb) {
+    gl.bindRenderbuffer(gl.RENDERBUFFER, fbo._color_rb)
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA4, fbo._shape[0], fbo._shape[1])
+  }
+  if(fbo.depth) {
+    fbo.depth.shape = fbo._shape
+  }
+  if(fbo._depth_rb) {
+    gl.bindRenderbuffer(gl.RENDERBUFFER, fbo._depth_rb)
+    if(this._useDepth && this._useStencil) {
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, fbo._shape[0], fbo._shape[1])
+    } else if(this._useDepth) {
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, fbo._shape[0], fbo._shape[1])
+    } else if(this._useStencil) {
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX, fbo._shape[0], fbo._shape[1])
     }
-    if(this._color_rb) {
-      gl.bindRenderbuffer(gl.RENDERBUFFER, this._color_rb)
-      gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA4, this._shape[1], this._shape[0])
-    }
-    if(this.depth) {
-      this.depth.shape = this._shape
-    }
-    if(this._depth_rb) {
-      gl.bindRenderbuffer(gl.RENDERBUFFER, this._depth_rb)
-      if(this._useDepth && this._useStencil) {
-        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, this._shape[1], this._shape[0])
-      } else if(this._useDepth) {
-        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this._shape[1], this._shape[0])
-      } else if(this._useStencil) {
-        gl.renderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX, this._shape[1], this._shape[0])
+  }
+
+  //Check FBO status after resize, if something broke then die in a fire
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.handle)
+  var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER)
+  if(status !== gl.FRAMEBUFFER_COMPLETE) {
+    fbo.dispose()
+    restoreFBOState(gl, state)
+    throwFBOError(status)
+  }
+  
+  //Restore framebuffer state
+  restoreFBOState(gl, state)
+}
+
+Object.defineProperties(proto, {
+  "shape": {
+    get: function() {
+      if(this._destroyed) {
+        return [0,0]
       }
-    }
+      return this._shapeVector
+    },
+    set: function(x) {
+      if(!Array.isArray(x)) {
+        x = [x|0, x|0]
+      }
+      if(x.length !== 2) {
+        throw new Error("gl-fbo: Shape vector must be length 2")
+      }
 
-    //Check FBO status after resize, if something broke then die in a fire
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle)
-    var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER)
-    if(status !== gl.FRAMEBUFFER_COMPLETE) {
-      this.dispose()
-      throwFBOError(status)
-    }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+      var w = x[0]|0
+      var h = x[1]|0
+      reshapeFBO(this, w, h)
 
-    //Success!
-    return x
+      return [w, h]
+    },
+    enumerable: false
+  },
+  "width": {
+    get: function() {
+      if(this._destroyed) {
+        return 0
+      }
+      return this._shape[0]
+    },
+    set: function(w) {
+      w = w|0
+      reshapeFBO(this, w, this._shape[1])
+      return w
+    },
+    enumerable: false
+  },
+  "height": {
+    get: function() {
+      if(this._destroyed) {
+        return 0
+      }
+      return this._shape[1]
+    },
+    set: function(h) {
+      h = h|0
+      reshapeFBO(this, this._shape[0], h)
+      return h
+    },
+    enumerable: false
   }
 })
 
@@ -257,7 +347,7 @@ proto.bind = function() {
   }
   var gl = this.gl
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle)
-  gl.viewport(0, 0, this._shape[1], this._shape[0])
+  gl.viewport(0, 0, this._shape[0], this._shape[1])
 }
 
 proto.dispose = function() {
@@ -306,8 +396,8 @@ function createFBO(gl, width, height, options) {
   //Special case: Can accept an array as argument
   if(Array.isArray(width)) {
     options = height
-    height = width[0]|0
-    width = width[1]|0
+    height = width[1]|0
+    width = width[0]|0
   }
   
   if(typeof width !== "number") {

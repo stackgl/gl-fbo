@@ -137,11 +137,11 @@ There is currently only one default way to create a Framebuffer object.  You can
 Creates a wrapped framebuffer object
 
 * `gl` is a handle to a WebGL context
-* `shape` is a length 2 array encoding the `[rows, columns]` of the frame buffer
+* `shape` is a length 2 array encoding the `[width, height]` of the frame buffer
 * `options` is an object containing the following optional properties:
 
-    + `options.float` Use floating point textures (default `false`)
     + `options.preferFloat` Upgrade to floating point if available, otherwise fallback to 8bit. (default `false`)
+    + `options.float` Use floating point textures (default `false`)
     + `options.color`  The number of color buffers to create (default `1`)
     + `options.depth` If fbo has a depth buffer (default: `true`)
     + `options.stencil` If fbo has a stencil buffer (default: `false`)
@@ -161,7 +161,7 @@ Destroys the framebuffer object and releases all associated resources
 Returns the shape of the frame buffer object.  Writing to this property resizes the framebuffer.  For example,
 
 ```javascript
-fbo.shape = [ numRows, numCols ]
+fbo.shape = [ newWidth, newHeight ]
 ```
 
 ### `fbo.gl`
@@ -179,4 +179,4 @@ The depth/stencil component of the FBO.  Stored as a [`gl-texture2d`](https://gi
 
 Credits
 =======
-(c) 2013-2014 Mikola Lysenko. MIT
+(c) 2013-2014 Mikola Lysenko. MIT License
