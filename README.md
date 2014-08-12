@@ -4,7 +4,7 @@ WebGL framebuffer object wrapper
 
 ## Example
 
-[Try this in your browser if you have WebGL](http://gl-modules.github.io/gl-fbo/)
+[Try this in your browser if you have WebGL](http://stackgl.github.io/gl-fbo/)
 
 ```javascript
 var shell = require("gl-now")()
