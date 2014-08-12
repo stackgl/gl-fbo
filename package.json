@@ -20,7 +20,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/stackgl/fbo.git"
+    "url": "git://github.com/stackgl/gl-fbo.git"
   },
   "keywords": [
     "fbo",

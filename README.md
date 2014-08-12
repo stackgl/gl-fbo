@@ -149,7 +149,12 @@ Creates a wrapped framebuffer object
 ## Methods
 
 ### `fbo.bind()`
-Binds the framebuffer object to the display.
+Binds the framebuffer object to the display.  To rebind the original drawing buffer, you can just call WebGL directly:
+
+```javascript
+//Bind the drawing buffer
+gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+```
 
 ### `fbo.dispose()`
 Destroys the framebuffer object and releases all associated resources
