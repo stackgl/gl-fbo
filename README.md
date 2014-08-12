@@ -117,7 +117,7 @@ shell.on("gl-render", function(t) {
 
 Result:
 
-<img src="https://raw.github.com/mikolalysenko/gl-fbo/master/screenshot.png">
+<img src="https://raw.github.com/stackgl/gl-fbo/master/screenshot.png">
 
 
 ## Install
@@ -176,11 +176,10 @@ A reference to the WebGL context
 A handle to the underlying Framebuffer object.
 
 ### `fbo.color`
-An containing [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d) objects representing the buffers.  
+An array containing [`gl-texture2d`](https://github.com/stackgl/gl-texture2d) objects representing the buffers.  
 
 ### `fbo.depth`
-The depth/stencil component of the FBO.  Stored as a [`gl-texture2d`](https://github.com/mikolalysenko/gl-texture2d).  If not present, is null.
-
+The depth/stencil component of the FBO.  Stored as a [`gl-texture2d`](https://github.com/stackgl/gl-texture2d).  If not present, is `null`.
 
 Credits
 =======
