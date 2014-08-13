@@ -253,7 +253,7 @@ function reshapeFBO(fbo, w, h) {
   var state = saveFBOState(gl)
 
   //Resize framebuffer attachments
-  for(var i=0; i<this.color.length; ++i) {
+  for(var i=0; i<fbo.color.length; ++i) {
     fbo.color[i].shape = fbo._shape
   }
   if(fbo._color_rb) {
