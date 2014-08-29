@@ -253,7 +253,7 @@ function reshapeFBO(fbo, w, h) {
   var state = saveFBOState(gl)
 
   //Resize framebuffer attachments
-  for(var i=0; i<this.color.length; ++i) {
+  for(var i=0; i<fbo.color.length; ++i) {
     fbo.color[i].shape = fbo._shape
   }
   if(fbo._color_rb) {
@@ -265,11 +265,11 @@ function reshapeFBO(fbo, w, h) {
   }
   if(fbo._depth_rb) {
     gl.bindRenderbuffer(gl.RENDERBUFFER, fbo._depth_rb)
-    if(this._useDepth && this._useStencil) {
+    if(fbo._useDepth && fbo._useStencil) {
       gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, fbo._shape[0], fbo._shape[1])
-    } else if(this._useDepth) {
+    } else if(fbo._useDepth) {
       gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, fbo._shape[0], fbo._shape[1])
-    } else if(this._useStencil) {
+    } else if(fbo._useStencil) {
       gl.renderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX, fbo._shape[0], fbo._shape[1])
     }
   }
