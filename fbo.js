@@ -1,7 +1,7 @@
-"use strict";
+'use strict'
 
-var webglew = require("webglew")
-var createTexture = require("gl-texture2d")
+var webglew = require('webglew')
+var createTexture = require('gl-texture2d')
 
 module.exports = createFBO
 
@@ -21,11 +21,11 @@ function saveFBOState(gl) {
 function restoreFBOState(gl, data) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, data[0])
   gl.bindRenderbuffer(gl.RENDERBUFFER, data[1])
-  gl.bindTexture(gl.TEXUTRE_2D, data[2] || null)
+  gl.bindTexture(gl.TEXTURE_2D, data[2])
 }
 
 function lazyInitColorAttachments(gl, ext) {
-  var maxColorAttachments = gl.getParameter(ext.MAX_COLOR_ATTACHMENTS_WEBGL);
+  var maxColorAttachments = gl.getParameter(ext.MAX_COLOR_ATTACHMENTS_WEBGL)
   colorAttachmentArrays = new Array(maxColorAttachments + 1)
   for(var i=0; i<=maxColorAttachments; ++i) {
     var x = new Array(maxColorAttachments)
@@ -43,15 +43,15 @@ function lazyInitColorAttachments(gl, ext) {
 function throwFBOError(status) {
   switch(status){
     case FRAMEBUFFER_UNSUPPORTED:
-      throw new Error("gl-fbo: Framebuffer unsupported")
+      throw new Error('gl-fbo: Framebuffer unsupported')
     case FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-      throw new Error("gl-fbo: Framebuffer incomplete attachment")
+      throw new Error('gl-fbo: Framebuffer incomplete attachment')
     case FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-      throw new Error("gl-fbo: Framebuffer incomplete dimensions")
+      throw new Error('gl-fbo: Framebuffer incomplete dimensions')
     case FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-      throw new Error("gl-fbo: Framebuffer incomplete missing attachment")
+      throw new Error('gl-fbo: Framebuffer incomplete missing attachment')
     default:
-      throw new Error("gl-fbo: Framebuffer failed for unspecified reason")
+      throw new Error('gl-fbo: Framebuffer failed for unspecified reason')
   }
 }
 
@@ -227,7 +227,7 @@ var proto = Framebuffer.prototype
 function reshapeFBO(fbo, w, h) {
   //If fbo is invalid, just skip this
   if(fbo._destroyed) {
-    throw new Error("gl-fbo: Can't resize destroyed FBO")
+    throw new Error('gl-fbo: Can\'t resize destroyed FBO')
   }
 
   //Don't resize if no change in shape
@@ -242,7 +242,7 @@ function reshapeFBO(fbo, w, h) {
   var maxFBOSize = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)
   if( w < 0 || w > maxFBOSize || 
       h < 0 || h > maxFBOSize) {
-    throw new Error("gl-fbo: Can't resize FBO, invalid dimensions")
+    throw new Error('gl-fbo: Can\'t resize FBO, invalid dimensions')
   }
 
   //Update shape
@@ -288,7 +288,7 @@ function reshapeFBO(fbo, w, h) {
 }
 
 Object.defineProperties(proto, {
-  "shape": {
+  'shape': {
     get: function() {
       if(this._destroyed) {
         return [0,0]
@@ -300,7 +300,7 @@ Object.defineProperties(proto, {
         x = [x|0, x|0]
       }
       if(x.length !== 2) {
-        throw new Error("gl-fbo: Shape vector must be length 2")
+        throw new Error('gl-fbo: Shape vector must be length 2')
       }
 
       var w = x[0]|0
@@ -311,7 +311,7 @@ Object.defineProperties(proto, {
     },
     enumerable: false
   },
-  "width": {
+  'width': {
     get: function() {
       if(this._destroyed) {
         return 0
@@ -325,7 +325,7 @@ Object.defineProperties(proto, {
     },
     enumerable: false
   },
-  "height": {
+  'height': {
     get: function() {
       if(this._destroyed) {
         return 0
@@ -400,14 +400,14 @@ function createFBO(gl, width, height, options) {
     width = width[0]|0
   }
   
-  if(typeof width !== "number") {
-    throw new Error("gl-fbo: Missing shape parameter")
+  if(typeof width !== 'number') {
+    throw new Error('gl-fbo: Missing shape parameter')
   }
 
   //Validate width/height properties
   var maxFBOSize = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)
   if(width < 0 || width > maxFBOSize || height < 0 || height > maxFBOSize) {
-    throw new Error("gl-fbo: Parameters are too large for FBO")
+    throw new Error('gl-fbo: Parameters are too large for FBO')
   }
 
   //Handle each option type
@@ -415,18 +415,18 @@ function createFBO(gl, width, height, options) {
 
   //Figure out number of color buffers to use
   var numColors = 1
-  if("color" in options) {
+  if('color' in options) {
     numColors = Math.max(options.color|0, 0)
     if(numColors < 0) {
-      throw new Error("gl-fbo: Must specify a nonnegative number of colors")
+      throw new Error('gl-fbo: Must specify a nonnegative number of colors')
     }
     if(numColors > 1) {
       //Check if multiple render targets supported
       var mrtext = extensions.WEBGL_draw_buffers
       if(!mrtext) {
-        throw new Error("gl-fbo: Multiple draw buffer extension not supported")
+        throw new Error('gl-fbo: Multiple draw buffer extension not supported')
       } else if(numColors > gl.getParameter(mrtext.MAX_COLOR_ATTACHMENTS_WEBGL)) {
-        throw new Error("gl-fbo: Context does not support " + numColors + " draw buffers")
+        throw new Error('gl-fbo: Context does not support ' + numColors + ' draw buffers')
       }
     }
   }
@@ -435,7 +435,7 @@ function createFBO(gl, width, height, options) {
   var colorType = gl.UNSIGNED_BYTE
   if(options.float && numColors > 0) {
     if(!extensions.OES_texture_float) {
-      throw new Error("gl-fbo: Context does not support floating point textures")
+      throw new Error('gl-fbo: Context does not support floating point textures')
     }
     colorType = gl.FLOAT
   } else if(options.preferFloat && numColors > 0) {
@@ -446,13 +446,13 @@ function createFBO(gl, width, height, options) {
 
   //Check if we should use depth buffer
   var useDepth = true
-  if("depth" in options) {
+  if('depth' in options) {
     useDepth = !!options.depth
   }
 
   //Check if we should use a stencil buffer
   var useStencil = false
-  if("stencil" in options) {
+  if('stencil' in options) {
     useStencil = !!options.stencil
   }
 
