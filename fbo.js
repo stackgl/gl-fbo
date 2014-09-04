@@ -21,7 +21,7 @@ function saveFBOState(gl) {
 function restoreFBOState(gl, data) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, data[0])
   gl.bindRenderbuffer(gl.RENDERBUFFER, data[1])
-  gl.bindTexture(gl.TEXUTRE_2D, data[2])
+  gl.bindTexture(gl.TEXUTRE_2D, data[2] || null)
 }
 
 function lazyInitColorAttachments(gl, ext) {
