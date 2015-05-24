@@ -108,7 +108,7 @@ function rebuildFBO(fbo) {
       ext.drawBuffersWEBGL(colorAttachmentArrays[0])
     }
   } else if(numColors > 1) {
-    ext.drawBuffersWEBGL(colorAttachmentArrays[numColor])
+    ext.drawBuffersWEBGL(colorAttachmentArrays[numColors])
   }
 
   //Allocate depth/stencil buffers
