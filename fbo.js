@@ -1,6 +1,5 @@
 'use strict'
 
-var webglew = require('webglew')
 var createTexture = require('gl-texture2d')
 
 module.exports = createFBO
@@ -93,11 +92,10 @@ function rebuildFBO(fbo) {
   var useStencil = fbo._useStencil
   var useDepth = fbo._useDepth
   var colorType = fbo._colorType
-  var extensions = webglew(gl)
 
   //Bind the fbo
   gl.bindFramebuffer(gl.FRAMEBUFFER, handle)
-  
+
   //Allocate color buffers
   for(var i=0; i<numColors; ++i) {
     fbo.color[i] = initTexture(gl, width, height, colorType, gl.RGBA, gl.COLOR_ATTACHMENT0 + i)
@@ -112,10 +110,11 @@ function rebuildFBO(fbo) {
   }
 
   //Allocate depth/stencil buffers
-  if(extensions.WEBGL_depth_texture) {
+  var WEBGL_depth_texture = gl.getExtension('WEBGL_depth_texture')
+  if(WEBGL_depth_texture) {
     if(useStencil) {
       fbo.depth = initTexture(gl, width, height,
-                          extensions.WEBGL_depth_texture.UNSIGNED_INT_24_8_WEBGL,
+                          WEBGL_depth_texture.UNSIGNED_INT_24_8_WEBGL,
                           gl.DEPTH_STENCIL,
                           gl.DEPTH_STENCIL_ATTACHMENT)
     } else if(useDepth) {
@@ -173,7 +172,6 @@ function rebuildFBO(fbo) {
 }
 
 function Framebuffer(gl, width, height, colorType, numColors, useDepth, useStencil, ext) {
-  var extensions = webglew(gl)
 
   //Handle and set properties
   this.gl = gl
@@ -194,7 +192,7 @@ function Framebuffer(gl, width, height, colorType, numColors, useDepth, useStenc
   this._colorType = colorType
   this._useDepth = useDepth
   this._useStencil = useStencil
-  
+
   //Shape vector for resizing
   var parent = this
   var shapeVector = [width|0, height|0]
@@ -237,10 +235,10 @@ function reshapeFBO(fbo, w, h) {
   }
 
   var gl = fbo.gl
-  
+
   //Check parameter ranges
   var maxFBOSize = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)
-  if( w < 0 || w > maxFBOSize || 
+  if( w < 0 || w > maxFBOSize ||
       h < 0 || h > maxFBOSize) {
     throw new Error('gl-fbo: Can\'t resize FBO, invalid dimensions')
   }
@@ -282,7 +280,7 @@ function reshapeFBO(fbo, w, h) {
     restoreFBOState(gl, state)
     throwFBOError(status)
   }
-  
+
   //Restore framebuffer state
   restoreFBOState(gl, state)
 }
@@ -386,11 +384,10 @@ function createFBO(gl, width, height, options) {
     FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT = gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
   }
 
-  var extensions = webglew(gl)
-  
   //Lazily initialize color attachment arrays
-  if(!colorAttachmentArrays && extensions.WEBGL_draw_buffers) {
-    lazyInitColorAttachments(gl, extensions.WEBGL_draw_buffers)
+  var WEBGL_draw_buffers = gl.getExtension('WEBGL_draw_buffers')
+  if(!colorAttachmentArrays && WEBGL_draw_buffers) {
+    lazyInitColorAttachments(gl, WEBGL_draw_buffers)
   }
 
   //Special case: Can accept an array as argument
@@ -399,7 +396,7 @@ function createFBO(gl, width, height, options) {
     height = width[1]|0
     width = width[0]|0
   }
-  
+
   if(typeof width !== 'number') {
     throw new Error('gl-fbo: Missing shape parameter')
   }
@@ -422,10 +419,9 @@ function createFBO(gl, width, height, options) {
     }
     if(numColors > 1) {
       //Check if multiple render targets supported
-      var mrtext = extensions.WEBGL_draw_buffers
-      if(!mrtext) {
+      if(!WEBGL_draw_buffers) {
         throw new Error('gl-fbo: Multiple draw buffer extension not supported')
-      } else if(numColors > gl.getParameter(mrtext.MAX_COLOR_ATTACHMENTS_WEBGL)) {
+      } else if(numColors > gl.getParameter(WEBGL_draw_buffers.MAX_COLOR_ATTACHMENTS_WEBGL)) {
         throw new Error('gl-fbo: Context does not support ' + numColors + ' draw buffers')
       }
     }
@@ -433,13 +429,14 @@ function createFBO(gl, width, height, options) {
 
   //Determine whether to use floating point textures
   var colorType = gl.UNSIGNED_BYTE
+  var OES_texture_float = gl.getExtension('OES_texture_float')
   if(options.float && numColors > 0) {
-    if(!extensions.OES_texture_float) {
+    if(!OES_texture_float) {
       throw new Error('gl-fbo: Context does not support floating point textures')
     }
     colorType = gl.FLOAT
   } else if(options.preferFloat && numColors > 0) {
-    if(extensions.OES_texture_float) {
+    if(OES_texture_float) {
       colorType = gl.FLOAT
     }
   }
@@ -457,12 +454,12 @@ function createFBO(gl, width, height, options) {
   }
 
   return new Framebuffer(
-    gl, 
-    width, 
-    height, 
-    colorType, 
-    numColors, 
-    useDepth, 
-    useStencil, 
-    extensions.WEBGL_draw_buffers)
+    gl,
+    width,
+    height,
+    colorType,
+    numColors,
+    useDepth,
+    useStencil,
+    WEBGL_draw_buffers)
 }
