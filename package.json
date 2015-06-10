@@ -4,7 +4,6 @@
   "description": "Frame buffer object wrapper for WebGL",
   "main": "fbo.js",
   "dependencies": {
-    "webglew": "^1.0.0",
     "gl-texture2d": "^2.0.0"
   },
   "devDependencies": {
