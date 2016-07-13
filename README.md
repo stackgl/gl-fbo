@@ -140,11 +140,20 @@ Creates a wrapped framebuffer object
 * `shape` is a length 2 array encoding the `[width, height]` of the frame buffer
 * `options` is an object containing the following optional properties:
 
-    + `options.preferFloat` Upgrade to floating point if available, otherwise fallback to 8bit. (default `false`)
-    + `options.float` Use floating point textures (default `false`)
+    + `options.float` Require 32-bit floating point textures (default `false`)
+    + `options.halfFloat` Require 16-bit floating point textures (default `false`)
+    + `options.preferFloat` Upgrade to floating point if available, fallback to 16bit then 8bit. (default `false`)
+    + `options.preferHalfFloat` Upgrade to half-floating point if available, fallback to 32bit then 8bit. (default `false`)
     + `options.color`  The number of color buffers to create (default `1`)
     + `options.depth` If fbo has a depth buffer (default: `true`)
     + `options.stencil` If fbo has a stencil buffer (default: `false`)
+
+If more than one of the following options are true, then precedence is in the following order: 
+
+    + `options.float`
+    + `options.halfFloat`
+    + `options.preferFloat`
+    + `options.preferHalfFloat`
 
 ## Methods
 
