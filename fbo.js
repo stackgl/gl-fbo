@@ -38,6 +38,23 @@ function lazyInitColorAttachments(gl, ext) {
   }
 }
 
+// returns true if the given format is rendererable by the gl context
+// it does this by constructing a texture and attaching it to a Framebuffer
+// credit to:  http://stackoverflow.com/a/28949220/2479314
+function isFormatRenderable(gl, format) {
+  var tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, format, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+  var fb = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  return (status === gl.FRAMEBUFFER_COMPLETE);
+}
+
 //Throw an appropriate error
 function throwFBOError(status) {
   switch(status){
@@ -375,7 +392,6 @@ proto.dispose = function() {
 }
 
 function createFBO(gl, width, height, options) {
-
   //Update frame buffer error code values
   if(!FRAMEBUFFER_UNSUPPORTED) {
     FRAMEBUFFER_UNSUPPORTED = gl.FRAMEBUFFER_UNSUPPORTED
@@ -427,17 +443,34 @@ function createFBO(gl, width, height, options) {
     }
   }
 
-  //Determine whether to use floating point textures
-  var colorType = gl.UNSIGNED_BYTE
-  var OES_texture_float = gl.getExtension('OES_texture_float')
-  if(options.float && numColors > 0) {
-    if(!OES_texture_float) {
-      throw new Error('gl-fbo: Context does not support floating point textures')
-    }
-    colorType = gl.FLOAT
-  } else if(options.preferFloat && numColors > 0) {
-    if(OES_texture_float) {
-      colorType = gl.FLOAT
+  //Determine colorType based on options
+  var colorType = gl.UNSIGNED_BYTE; // default / fallback
+  if (numColors > 0) {
+    if(options.float) {
+      if (gl.getExtension('OES_texture_float') && isFormatRenderable(gl, gl.FLOAT))
+        colorType = gl.FLOAT;
+      else
+        throw new Error('gl-fbo: Context does not support floating point textures');
+    } else if (options.halfFloat) {
+      var OES_texture_half_float = gl.getExtension('OES_texture_half_float');
+      if (OES_texture_half_float && isFormatRenderable(gl, OES_texture_half_float.HALF_FLOAT_OES))
+        colorType = OES_texture_half_float.HALF_FLOAT_OES;
+      else
+        throw new Error('gl-fbo: Context does not support half-floating point textures');
+    } else if (options.preferFloat) {
+      if (gl.getExtension('OES_texture_float') && isFormatRenderable(gl, gl.FLOAT))
+        colorType = gl.FLOAT;
+      else {
+        var OES_texture_half_float = gl.getExtension('OES_texture_half_float');
+        if (OES_texture_half_float && isFormatRenderable(gl, OES_texture_half_float.HALF_FLOAT_OES))
+          colorType = OES_texture_half_float.HALF_FLOAT_OES;
+      }
+    } else if (options.preferHalfFloat) {
+      var OES_texture_half_float = gl.getExtension('OES_texture_half_float');
+      if (OES_texture_half_float && isFormatRenderable(gl, OES_texture_half_float.HALF_FLOAT_OES))
+        colorType = OES_texture_half_float.HALF_FLOAT_OES;
+      else if (gl.getExtension('OES_texture_float') && isFormatRenderable(gl, gl.FLOAT))
+        colorType = gl.FLOAT;
     }
   }
 
