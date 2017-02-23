@@ -7,11 +7,12 @@
     "gl-texture2d": "^2.0.0"
   },
   "devDependencies": {
+    "a-big-triangle": "0.0.0",
     "gl-now": "^1.3.1",
+    "gl-shader": "^4.2.1",
+    "glslify": "^6.x.x",
     "ndarray": "^1.0.15",
-    "ndarray-fill": "^1.0.1",
-    "glslify": "^1.4.0",
-    "a-big-triangle": "0.0.0"
+    "ndarray-fill": "^1.0.1"
   },
   "scripts": {
     "test": "tap test/*.js",

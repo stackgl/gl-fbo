@@ -8,70 +8,60 @@ WebGL framebuffer object wrapper
 
 ```javascript
 var shell = require("gl-now")()
+var glShader = require('gl-shader')
 var createFBO = require("gl-fbo")
 var glslify = require("glslify")
 var ndarray = require("ndarray")
 var fill = require("ndarray-fill")
 var fillScreen = require("a-big-triangle")
 
-var createUpdateShader = glslify({
-  vertex: "\
-    attribute vec2 position;\
-    varying vec2 uv;\
-    void main() {\
-      gl_Position = vec4(position,0.0,1.0);\
-      uv = 0.5 * (position+1.0);\
-    }",
-  fragment: "\
-    precision mediump float;\
-    uniform sampler2D buffer;\
-    uniform vec2 dims;\
-    varying vec2 uv;\
-    void main() {\
-      float n = 0.0;\
-      for(int dx=-1; dx<=1; ++dx)\
-      for(int dy=-1; dy<=1; ++dy) {\
-        n += texture2D(buffer, uv+vec2(dx,dy)/dims).r;\
-      }\
-      float s = texture2D(buffer, uv).r;\
-      if(n > 3.0+s || n < 3.0) {\
-        gl_FragColor = vec4(0,0,0,1);\
-      } else {\
-        gl_FragColor = vec4(1,1,1,1);\
-      }\
-    }",
-  inline: true
-})
+var vertexShaderCode = glslify`
+  attribute vec2 position;
+    varying vec2 uv;
+    void main() {
+     gl_Position = vec4(position,0.0,1.0);
+     uv = 0.5 * (position+1.0);
+  }
+  `
+var updateShaderCode = glslify`
+    precision mediump float;
+    uniform sampler2D buffer;
+    uniform vec2 dims;
+    varying vec2 uv;
+    void main() {
+      float n = 0.0;
+      for(int dx=-1; dx<=1; ++dx)
+      for(int dy=-1; dy<=1; ++dy) {
+        n += texture2D(buffer, uv+vec2(dx,dy)/dims).r;
+      }
+      float s = texture2D(buffer, uv).r;
+      if(n > 3.0+s || n < 3.0) {
+        gl_FragColor = vec4(0,0,0,1);
+      } else {
+        gl_FragColor = vec4(1,1,1,1);
+      }
+    }`
 
-var createDrawShader = glslify({
-  vertex: "\
-    attribute vec2 position;\
-    varying vec2 uv;\
-    void main() {\
-      gl_Position = vec4(position,0.0,1.0);\
-      uv = 0.5 * (position+1.0);\
-    }",
-  fragment: "\
-    precision mediump float;\
-    uniform sampler2D buffer;\
-    varying vec2 uv;\
-    void main() {\
-      gl_FragColor = texture2D(buffer, uv);\
-    }",
-  inline: true
-})
+var drawShaderCode = glslify`
+    precision mediump float;
+    uniform sampler2D buffer;
+    varying vec2 uv;
+    void main() {
+      gl_FragColor = texture2D(buffer, uv);
+    }`
 
 var state, updateShader, drawShader, current = 0
 
 shell.on("gl-init", function() {
   var gl = shell.gl
-  
+
   //Turn off depth test
   gl.disable(gl.DEPTH_TEST)
 
   //Initialize shaders
-  updateShader = createUpdateShader(gl)
-  drawShader = createDrawShader(gl)
+  updateShader = glShader(gl, vertexShaderCode, updateShaderCode)
+  drawShader = glShader(gl, vertexShaderCode, updateShaderCode)
+
 
   //Allocate buffers
   state = [ createFBO(gl, [512, 512]), createFBO(gl, [512, 512]) ]
